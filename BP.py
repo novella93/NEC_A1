@@ -85,17 +85,17 @@ class NeuralNet:
             # Iterate each training sample for forward and backward passes
             for j in range(X.shape[1]):
                 # Perform a forward propagation and reshape it as column vector
-                self.forward_propagation(X[:, j].reshape(-1, 1))
+                self.forward_propagation(X[j, :].reshape(-1, 1))
                 # Perform backward propagation and reshape it as column vector
-                self.backward_propagation(y[:, j].reshape(-1, 1))
+                self.backward_propagation(y[j, :].reshape(-1, 1))
             # Monitor training process
             if epoch % 1000 == 0:
-                predictions = np.hstack([self.forward_propagation(X[:, j].reshape(-1, 1))[-1] for j in range(X.shape[1])])
+                predictions = np.hstack([self.forward_propagation(X[j, :].reshape(-1, 1))[-1] for j in range(X.shape[0])])
                 loss = np.mean((y - predictions) ** 2)
                 print(f'Epoch number: {epoch}, Loss value: {loss}')
 
     def predict(self, X):
-        return self.forward_propagation(X)[-1]
+        return np.hstack([self.forward_propagation(X[j, :].reshape(-1, 1))[-1] for j in range(X.shape[0])])
 
 # Data preprocessing (scaling) 
 def scale_data(X, min_val, max_val): 
