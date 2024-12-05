@@ -41,7 +41,7 @@ def tanh_derivative(x):
 
 
 class NeuralNet:
-    def __init__(self, layers, learning_rate, momentum, fact):
+    def __init__(self, layers, epochs, learning_rate, momentum, fact):
         ############################
         # ATTRIBUTE INITIALIZATION #
         ############################
@@ -50,6 +50,8 @@ class NeuralNet:
         self.L = len(layers)
         # Layers
         self.n = layers.copy()
+        # Epochs
+        self.epochs = epochs
         # Learning rate
         self.learning_rate = learning_rate
         # Momentum
@@ -89,6 +91,9 @@ class NeuralNet:
 
         # Propagation of error
         self.delta = [np.zeros((1, layers[i])) for i in range(self.L)]
+
+        # Loss epochs storage
+        self.loss_values = np.zeros(self.epochs) 
 
     #####################
     # METHOD DEFINITION #
@@ -165,25 +170,37 @@ class NeuralNet:
             self.d_w_prev[i] = self.d_w[i]
             self.d_theta_prev[i] = self.d_theta[i]
 
-    def train(self, X, y, epochs, batch_size=32):
+    def fit(self, X, y):
+        # Normalize input data
+        X = (X - X.min()) / (X.max() - X.min())
+        # Train system
+        self._train(X, y)
+
+    def _train(self, X, y, batch_size=32):
         # Normalize input data
         X = (X - X.min()) / (X.max() - X.min())
         
-        for epoch in range(epochs):
+        for epoch in range(self.epochs):
             # Mini-batch gradient descent
             for i in range(0, X.shape[0], batch_size):
                 X_batch = X[i:i+batch_size]
                 y_batch = y[i:i+batch_size]
                 output = self.forward_propagation(X_batch)
                 self.backward_propagation(X_batch, y_batch, output)
-                
-            if epoch % 1000 == 0:
+            
+            # Calculate loss every 1000 epochs    
+            if epoch % 1000 == 0:  
                 output = self.forward_propagation(X)
                 # Mean squared error loss
                 loss = np.mean(np.square(y - output))  
                 print(f"Epoch {epoch}, Loss: {loss}")
 
+
+    def loss_epochs(self):
+        return self.loss_values
+
     def predict(self, X):
         # Normalize input data
-        X = (X - X.min()) / (X.max() - X.min())  
+        X = (X - X.min()) / (X.max() - X.min())
+        # Return prediction
         return self.forward_propagation(X)
