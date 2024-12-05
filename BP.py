@@ -41,7 +41,7 @@ def tanh_derivative(x):
 
 
 class NeuralNet:
-    def __init__(self, layers, epochs, learning_rate, momentum, fact):
+    def __init__(self, layers, learning_rate, momentum, fact):
         ############################
         # ATTRIBUTE INITIALIZATION #
         ############################
@@ -50,8 +50,6 @@ class NeuralNet:
         self.L = len(layers)
         # Layers
         self.n = layers.copy()
-        # Epochs
-        self.epochs = epochs
         # Learning rate
         self.learning_rate = learning_rate
         # Momentum
@@ -59,11 +57,11 @@ class NeuralNet:
         # Fact
         self.fact = fact
 
-        # Fields
-        self.h = [np.zeros((n, 1)) for n in layers]
+        # Fields initialized with batch size of 1
+        self.h = [np.zeros((1, layers[i])) for i in range(self.L)]
 
-        # Activations of the networks
-        self.xi = [np.zeros((n, 1)) for n in layers]
+        # Activations of the networks initialized with batch size of 1
+        self.xi = [np.zeros((1, layers[i])) for i in range(self.L)]
 
         # Weights (with smaller initialization)
         # self.w = [np.random.randn(layers[i], layers[i - 1]) * 0.01 for i in range(1, self.L)]
@@ -73,24 +71,24 @@ class NeuralNet:
         self.w = [np.random.randn(layers[i], layers[i+1]) * np.sqrt(2. / layers[i]) for i in range(self.L - 1)]
         
         # Weights changes
-        self.d_w = [np.zeros((layers[i], layers[i - 1])) for i in range(1, self.L)]
+        self.d_w = [np.zeros_like(self.w[i]) for i in range(self.L-1)]
         # Previous changes for weights
-        self.d_w_prev = [np.zeros((layers[i], layers[i - 1])) for i in range(1, self.L)]
+        self.d_w_prev = [np.zeros_like(self.w[i]) for i in range(self.L-1)]
 
         # Thresholds
-        self.theta = [np.random.randn(n, 1) * 0.01 for n in layers[1:]]
+        self.theta = [np.random.randn(1, layers[i+1]) * 0.01 for i in range(self.L-1)]
         # Xavier intialization
         # self.theta = [np.random.randn(n, 1) * np.sqrt(2 / (layers[i])) for i, n in enumerate(layers[1:])]
         # He initialization
         # self.theta = [np.random.randn(layers[i], layers[i+1]) * np.sqrt(2. / layers[i]) for i in range(self.L - 1)]
         
         # Thresholds changes
-        self.d_theta = [np.zeros((n, 1)) for n in layers[1:]]
+        self.d_theta = [np.zeros_like(self.theta[i]) for i in range(self.L-1)]
         # Previous changes for thresholds
-        self.d_theta_prev = [np.zeros((n, 1)) for n in layers[1:]]
+        self.d_theta_prev = [np.zeros_like(self.theta[i]) for i in range(self.L-1)]
 
         # Propagation of error
-        self.delta = [np.zeros((n, 1)) for n in layers]
+        self.delta = [np.zeros((1, layers[i])) for i in range(self.L)]
 
     #####################
     # METHOD DEFINITION #
@@ -130,7 +128,7 @@ class NeuralNet:
         # Activate the forward propagation for each layer
         for i in range(1, self.L):
             # Perform a product between the weights of the previous layer and the activations of the previous layer, and then adds the theta
-            self.h[i] = np.dot(self.w[i - 1], self.xi[i - 1]) + self.theta[i - 1]
+            self.h[i] = np.dot(self.xi[i-1], self.w[i-1]) + self.theta[i-1]
             # Get the activation of the processed layer
             self.xi[i] = self._select_activation_function(self.h[i])
         # Return the last layer activation value that corresponds to the output layer
@@ -151,7 +149,7 @@ class NeuralNet:
         # Update the weights and threshold using gradient descent with momentum
         for i in range(self.L-1):
             # Gradient of the weights
-            self.d_w[i] = self.h[i].T.dot(self.delta[i+1])  
+            self.d_w[i] = self.xi[i].T.dot(self.delta[i+1])  
             # Gradient of the threshold
             self.d_theta[i] = np.sum(self.delta[i+1], axis=0, keepdims=True)  
 
@@ -189,7 +187,3 @@ class NeuralNet:
         # Normalize input data
         X = (X - X.min()) / (X.max() - X.min())  
         return self.forward_propagation(X)
-
-# # Data preprocessing (scaling) 
-# def scale_data(X, min_val, max_val): 
-#     return (X - min_val) / (max_val - min_val)
