@@ -1,14 +1,47 @@
 import numpy as np
 
-# Activation function (Sigmoid) and its derivative for the forward and backward propagation
+############################
+#   ACTIVATION FUNCTIONS   #
+############################
+
+# Define sigmoid activation function and its derivative
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 def sigmoid_derivative(x):
     return x * (1 - x)
 
+# Define relu activation function and its derivative
+def relu(x): 
+    return np.maximum(0, x) 
+
+def relu_derivative(x): 
+    return np.where(x > 0, 1, 0)
+
+# Define leaky relu activation function and its derivative
+def leaky_relu(x, alpha=0.01):
+    return np.where(x > 0, x, alpha * x)
+
+def leaky_relu_derivative(x, alpha=0.01):
+    return np.where(x > 0, 1, alpha)
+
+# Define linear activation function and its derivative
+def linear(x):
+    return x
+
+def linear_derivative(x):
+    return np.ones_like(x)
+
+# Define tanh activation function and its derivative
+def tanh(x):
+    return np.tanh(x)
+
+def tanh_derivative(x):
+    return 1 - np.tanh(x) ** 2
+
+
 class NeuralNet:
-    def __init__(self, layers, epochs, learning_rate, momentum):
+    def __init__(self, layers, epochs, learning_rate, momentum, fact):
         ############################
         # ATTRIBUTE INITIALIZATION #
         ############################
@@ -23,6 +56,8 @@ class NeuralNet:
         self.learning_rate = learning_rate
         # Momentum
         self.momentum = momentum
+        # Fact
+        self.fact = fact
 
         # Fields
         self.h = [np.zeros((n, 1)) for n in layers]
@@ -31,14 +66,18 @@ class NeuralNet:
         self.xi = [np.zeros((n, 1)) for n in layers]
 
         # Weights (with smaller initialization)
-        self.w = [np.random.randn(layers[i], layers[i - 1]) * 0.01 for i in range(1, self.L)]
+        # self.w = [np.random.randn(layers[i], layers[i - 1]) * 0.01 for i in range(1, self.L)]
+        # Xavier initialization
+        self.w = [np.random.randn(layers[i], layers[i - 1]) * np.sqrt(2 / (layers[i] + layers[i - 1])) for i in range(1, self.L)]
         # Weights changes
         self.d_w = [np.zeros((layers[i], layers[i - 1])) for i in range(1, self.L)]
         # Previous changes for weights
         self.d_w_prev = [np.zeros((layers[i], layers[i - 1])) for i in range(1, self.L)]
 
         # Thresholds
-        self.theta = [np.random.randn(n, 1) * 0.01 for n in layers[1:]]
+        # self.theta = [np.random.randn(n, 1) * 0.01 for n in layers[1:]]
+        # Xavier intialization
+        self.theta = [np.random.randn(n, 1) * np.sqrt(2 / (layers[i])) for i, n in enumerate(layers[1:])]
         # Thresholds changes
         self.d_theta = [np.zeros((n, 1)) for n in layers[1:]]
         # Previous changes for thresholds
@@ -100,20 +139,3 @@ class NeuralNet:
 # Data preprocessing (scaling) 
 def scale_data(X, min_val, max_val): 
     return (X - min_val) / (max_val - min_val)
-
-# Example usage
-if __name__ == "__main__":
-    # Example data (X: inputs, y: targets)
-    X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]]).T
-    y = np.array([[0], [1], [1], [0]]).T
-
-    # Scale data
-    X_scaled = scale_data(X, X.min(), X.max())
-
-    # Initialize and train the neural network
-    nn = NeuralNet(layers=[2, 3, 1], epochs=10000, learning_rate=0.9, momentum=0.9)
-    nn.train(X_scaled, y)
-
-    # Make predictions
-    predictions = nn.predict(X_scaled)
-    print(f'Predictions:\n{predictions}')
