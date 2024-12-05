@@ -68,16 +68,22 @@ class NeuralNet:
         # Weights (with smaller initialization)
         # self.w = [np.random.randn(layers[i], layers[i - 1]) * 0.01 for i in range(1, self.L)]
         # Xavier initialization
-        self.w = [np.random.randn(layers[i], layers[i - 1]) * np.sqrt(2 / (layers[i] + layers[i - 1])) for i in range(1, self.L)]
+        # self.w = [np.random.randn(layers[i], layers[i - 1]) * np.sqrt(2 / (layers[i] + layers[i - 1])) for i in range(1, self.L)]
+        # He initialization
+        self.w = [np.random.randn(layers[i], layers[i+1]) * np.sqrt(2. / layers[i]) for i in range(self.L - 1)]
+        
         # Weights changes
         self.d_w = [np.zeros((layers[i], layers[i - 1])) for i in range(1, self.L)]
         # Previous changes for weights
         self.d_w_prev = [np.zeros((layers[i], layers[i - 1])) for i in range(1, self.L)]
 
         # Thresholds
-        # self.theta = [np.random.randn(n, 1) * 0.01 for n in layers[1:]]
+        self.theta = [np.random.randn(n, 1) * 0.01 for n in layers[1:]]
         # Xavier intialization
-        self.theta = [np.random.randn(n, 1) * np.sqrt(2 / (layers[i])) for i, n in enumerate(layers[1:])]
+        # self.theta = [np.random.randn(n, 1) * np.sqrt(2 / (layers[i])) for i, n in enumerate(layers[1:])]
+        # He initialization
+        # self.theta = [np.random.randn(layers[i], layers[i+1]) * np.sqrt(2. / layers[i]) for i in range(self.L - 1)]
+        
         # Thresholds changes
         self.d_theta = [np.zeros((n, 1)) for n in layers[1:]]
         # Previous changes for thresholds
@@ -90,52 +96,100 @@ class NeuralNet:
     # METHOD DEFINITION #
     #####################
 
-    def forward_propagation(self, X):
-        self.xi[0] = X
-        for i in range(1, self.L):
-            self.h[i] = np.dot(self.w[i - 1], self.xi[i - 1]) - self.theta[i - 1]
-            self.xi[i] = sigmoid(self.h[i])
-        return self.xi
+    def _select_activation_function(self, x):
+        if self.fact == 'sigmoid':
+            return sigmoid(x)
+        elif self.fact == 'relu':
+            return relu(x)
+        elif self.fact == 'leaky_relu':
+            return leaky_relu(x)
+        elif self.fact == 'tanh':
+            return tanh(x)
+        elif self.fact == 'linear':
+            return linear(x)
+        else:
+            return leaky_relu(x)
     
-    def backward_propagation(self, y):
+    def _select_derivative_activation_function(self, x):
+        if self.fact == 'sigmoid':
+            return sigmoid_derivative(x)
+        elif self.fact == 'relu':
+            return relu_derivative(x)
+        elif self.fact == 'leaky_relu':
+            return leaky_relu_derivative(x)
+        elif self.fact == 'tanh':
+            return tanh_derivative(x)
+        elif self.fact == 'linear':
+            return linear_derivative(x)
+        else:
+            return leaky_relu_derivative(x)
+
+    def forward_propagation(self, X):
+        # Get the input data
+        self.xi[0] = X
+        # Activate the forward propagation for each layer
+        for i in range(1, self.L):
+            # Perform a product between the weights of the previous layer and the activations of the previous layer, and then adds the theta
+            self.h[i] = np.dot(self.w[i - 1], self.xi[i - 1]) + self.theta[i - 1]
+            # Get the activation of the processed layer
+            self.xi[i] = self._select_activation_function(self.h[i])
+        # Return the last layer activation value that corresponds to the output layer
+        return self.xi[-1]
+    
+    def backward_propagation(self, X, y, output):
+        # Compute the error at the output layer
+        output_error = y - output
         # Compute the gradient of the loss with respect to the output
-        self.delta[-1] = (self.xi[-1] - y) * sigmoid_derivative(self.h[-1])
-        for i in range(self.L - 2, 0, -1):
-            self.delta[i] = np.dot(self.w[i].T, self.delta[i + 1]) * sigmoid_derivative(self.h[i])
-        for i in range(self.L - 1):
-            self.d_w[i] = np.dot(self.delta[i + 1], self.xi[i].T)
-            self.d_theta[i] = self.delta[i + 1]
+        self.delta[-1] = output_error * self._select_derivative_activation_function(self.h[-1])
+
+        # Backpropagate the error through each layer
+        for i in range(self.L-2, -1, -1):
+            self.delta[i] = self.delta[i+1].dot(self.w[i].T) * self._select_derivative_activation_function(self.h[i])
+            # Gradient clipping
+            np.clip(self.delta[i], -1, 1, out=self.delta[i])
+       
+        # Update the weights and threshold using gradient descent with momentum
+        for i in range(self.L-1):
+            # Gradient of the weights
+            self.d_w[i] = self.h[i].T.dot(self.delta[i+1])  
+            # Gradient of the threshold
+            self.d_theta[i] = np.sum(self.delta[i+1], axis=0, keepdims=True)  
 
             # Gradient clipping
             np.clip(self.d_w[i], -1, 1, out=self.d_w[i])
             np.clip(self.d_theta[i], -1, 1, out=self.d_theta[i])
 
-            # Update weights and thresholds with momentum
-            self.w[i] -= self.learning_rate * self.d_w[i] + self.momentum * self.d_w_prev[i]
-            self.theta[i] -= self.learning_rate * self.d_theta[i] + self.momentum * self.d_theta_prev[i]
+            # Apply momentum and update weights and biases
+            self.w[i] += self.learning_rate * self.d_w[i] + self.momentum * self.d_w_prev[i]
+            self.theta[i] += self.learning_rate * self.d_theta[i] + self.momentum * self.d_theta_prev[i]
 
-            # Store current changes for the momentum term
+            # Save the previous weight and bias updates for momentum
             self.d_w_prev[i] = self.d_w[i]
             self.d_theta_prev[i] = self.d_theta[i]
 
-    def train(self, X, y):
-        # Iterate over the epochs for the dataset
-        for epoch in range(self.epochs):
-            # Iterate each training sample for forward and backward passes
-            for j in range(X.shape[1]):
-                # Perform a forward propagation and reshape it as column vector
-                self.forward_propagation(X[j, :].reshape(-1, 1))
-                # Perform backward propagation and reshape it as column vector
-                self.backward_propagation(y[j, :].reshape(-1, 1))
-            # Monitor training process
+    def train(self, X, y, epochs, batch_size=32):
+        # Normalize input data
+        X = (X - X.min()) / (X.max() - X.min())
+        
+        for epoch in range(epochs):
+            # Mini-batch gradient descent
+            for i in range(0, X.shape[0], batch_size):
+                X_batch = X[i:i+batch_size]
+                y_batch = y[i:i+batch_size]
+                output = self.forward_propagation(X_batch)
+                self.backward_propagation(X_batch, y_batch, output)
+                
             if epoch % 1000 == 0:
-                predictions = np.hstack([self.forward_propagation(X[j, :].reshape(-1, 1))[-1] for j in range(X.shape[0])])
-                loss = np.mean((y - predictions) ** 2)
-                print(f'Epoch number: {epoch}, Loss value: {loss}')
+                output = self.forward_propagation(X)
+                # Mean squared error loss
+                loss = np.mean(np.square(y - output))  
+                print(f"Epoch {epoch}, Loss: {loss}")
 
     def predict(self, X):
-        return np.hstack([self.forward_propagation(X[j, :].reshape(-1, 1))[-1] for j in range(X.shape[0])])
+        # Normalize input data
+        X = (X - X.min()) / (X.max() - X.min())  
+        return self.forward_propagation(X)
 
-# Data preprocessing (scaling) 
-def scale_data(X, min_val, max_val): 
-    return (X - min_val) / (max_val - min_val)
+# # Data preprocessing (scaling) 
+# def scale_data(X, min_val, max_val): 
+#     return (X - min_val) / (max_val - min_val)
