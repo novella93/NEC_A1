@@ -93,11 +93,11 @@ class NeuralNet:
         self.delta = [np.zeros((1, layers[i])) for i in range(self.L)]
 
         # Loss epochs storage
-        self.loss_values = np.zeros(self.epochs) 
+        self.train_loss = np.zeros(self.epochs) 
 
-    #####################
-    # METHOD DEFINITION #
-    #####################
+    ##############################
+    # PRIVATE METHODS DEFINITION #
+    ##############################
 
     def _select_activation_function(self, x):
         if self.fact == 'sigmoid':
@@ -127,7 +127,7 @@ class NeuralNet:
         else:
             return leaky_relu_derivative(x)
 
-    def forward_propagation(self, X):
+    def _forward_propagation(self, X):
         # Get the input data
         self.xi[0] = X
         # Activate the forward propagation for each layer
@@ -139,7 +139,7 @@ class NeuralNet:
         # Return the last layer activation value that corresponds to the output layer
         return self.xi[-1]
     
-    def backward_propagation(self, X, y, output):
+    def _backward_propagation(self, X, y, output):
         # Compute the error at the output layer
         output_error = y - output
         # Compute the gradient of the loss with respect to the output
@@ -170,12 +170,6 @@ class NeuralNet:
             self.d_w_prev[i] = self.d_w[i]
             self.d_theta_prev[i] = self.d_theta[i]
 
-    def fit(self, X, y):
-        # Normalize input data
-        X = (X - X.min()) / (X.max() - X.min())
-        # Train system
-        self._train(X, y)
-
     def _train(self, X, y, batch_size=32):
         # Normalize input data
         X = (X - X.min()) / (X.max() - X.min())
@@ -185,22 +179,33 @@ class NeuralNet:
             for i in range(0, X.shape[0], batch_size):
                 X_batch = X[i:i+batch_size]
                 y_batch = y[i:i+batch_size]
-                output = self.forward_propagation(X_batch)
-                self.backward_propagation(X_batch, y_batch, output)
-            
-            # Calculate loss every 1000 epochs    
-            if epoch % 1000 == 0:  
-                output = self.forward_propagation(X)
-                # Mean squared error loss
-                loss = np.mean(np.square(y - output))  
-                print(f"Epoch {epoch}, Loss: {loss}")
+                output = self._forward_propagation(X_batch)
+                self._backward_propagation(X_batch, y_batch, output)
+            # Calculate loss of each epoch
+            output = self._forward_propagation(X)
+            self._backward_propagation(X, y, output)
+            loss = np.mean(np.square(y - output))
+            # Store loss of each epoch during the training
+            self.train_loss[epoch] = loss
+            # Print the loss every 1000 epochs for debug purpose
+            # if epoch % 1000 == 0:  
+            #     print(f"Epoch {epoch}, Loss: {loss}")
 
+    #############################
+    # PUBLIC METHODS DEFINITION #
+    #############################
 
-    def loss_epochs(self):
-        return self.loss_values
+    def fit(self, X, y):
+        # Normalize input data
+        X = (X - X.min()) / (X.max() - X.min())
+        # Train system
+        self._train(X, y)
 
     def predict(self, X):
         # Normalize input data
         X = (X - X.min()) / (X.max() - X.min())
         # Return prediction
-        return self.forward_propagation(X)
+        return self._forward_propagation(X)
+    
+    def loss_epochs(self):
+        return self.train_loss
