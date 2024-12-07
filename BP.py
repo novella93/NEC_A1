@@ -187,9 +187,6 @@ class NeuralNet:
             loss = np.mean(np.square(y - output))
             # Store loss of each epoch during the training
             self.train_loss[epoch] = loss
-            # Print the loss every 1000 epochs for debug purpose
-            # if epoch % 1000 == 0:  
-            #     print(f"Epoch {epoch}, Loss: {loss}")
 
     #############################
     # PUBLIC METHODS DEFINITION #
