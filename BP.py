@@ -94,6 +94,7 @@ class NeuralNet:
 
         # Loss epochs storage
         self.train_loss = np.zeros(self.epochs) 
+        self.validation_loss = np.zeros(self.epochs) 
 
     ##############################
     # PRIVATE METHODS DEFINITION #
@@ -170,10 +171,11 @@ class NeuralNet:
             self.d_w_prev[i] = self.d_w[i]
             self.d_theta_prev[i] = self.d_theta[i]
 
-    def _train(self, X, y, batch_size=32):
+    def _train(self, X, y, X_val, y_val, batch_size=32):
         # Normalize input data
         X = (X - X.min()) / (X.max() - X.min())
-        
+        X_val = (X_val - X_val.min()) / (X_val.max() - X_val.min())
+
         for epoch in range(self.epochs):
             # Mini-batch gradient descent
             for i in range(0, X.shape[0], batch_size):
@@ -181,10 +183,14 @@ class NeuralNet:
                 y_batch = y[i:i+batch_size]
                 output = self._forward_propagation(X_batch)
                 self._backward_propagation(X_batch, y_batch, output)
-            # Calculate loss of each epoch
+            # Calculate the training loss of each epoch
             output = self._forward_propagation(X)
             self._backward_propagation(X, y, output)
             loss = np.mean(np.square(y - output))
+            # Calculate validation loss of each epoch
+            val_output = self._forward_propagation(X_val)
+            val_loss = np.mean(np.square(y_val - val_output))
+            self.validation_loss[epoch] = val_loss
             # Store loss of each epoch during the training
             self.train_loss[epoch] = loss
 
@@ -192,11 +198,12 @@ class NeuralNet:
     # PUBLIC METHODS DEFINITION #
     #############################
 
-    def fit(self, X, y):
+    def fit(self, X, y, X_val, y_val):
         # Normalize input data
         X = (X - X.min()) / (X.max() - X.min())
+        X_val = (X_val - X_val.min()) / (X_val.max() - X_val.min())
         # Train system
-        self._train(X, y)
+        self._train(X, y, X_val, y_val)
 
     def predict(self, X):
         # Normalize input data
@@ -205,4 +212,4 @@ class NeuralNet:
         return self._forward_propagation(X)
     
     def loss_epochs(self):
-        return self.train_loss
+        return [self.train_loss, self.validation_loss]
