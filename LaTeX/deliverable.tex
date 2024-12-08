@@ -70,11 +70,16 @@ report in the markdowns. But it contains all the Python code used to obtain the 
 \vspace{1em} For the BP implementation the file BP.py is the module which implements the NeuralNet Class, and can be found also in the same
 repository.
 
+\newpage
+
 \section{Dataset}
 
 The dataset used include data for the estimation of obesity levels in individuals from the countries of Mexico, Peru and Colombia, based 
 on their eating habits and physical condition. The data contains 17 attributes and 2111 records. The dataset source is UCI Machine Learning 
 Repository \href{https://archive.ics.uci.edu/dataset/544/estimation+of+obesity+levels+based+on+eating+habits+and+physical+condition}{(Link to the dataset repository)}.
+
+\vspace{1em} Note: all the results and calculations obtained in this chapter can be found in the file A1.ipynb in the GitHub repository 
+(\href{https://github.com/novella93/NEC_A1/blob/main/A1.ipynb}{Link to A1.ipynb in Javier Novella NEC A1 repository})
 
 \vspace{1em} The dataset is composed by the following features:
 
@@ -97,6 +102,8 @@ Repository \href{https://archive.ics.uci.edu/dataset/544/estimation+of+obesity+l
     \item \textbf{MTRANS}: Which transportation does the individual usually use?
     \item \textbf{NObeyesdad}: Obesity level
 \end{itemize}
+
+\newpage
 
 \subsection{Inputs and output selection}
 
@@ -327,7 +334,7 @@ adjustments to be made to achieve good predictions.
     \includegraphics[width=\textwidth]{images/distribution_categorical_features.png}
     \caption{Distribution of the categorical features}
     \label{fig:image_distribution_categorical_features}
-  \end{figure}
+\end{figure}
 
 But the get more insights it is interesting to get the boxplot of the categorical features against the output feature that is the obesity level.
 This is shown in the Figure \ref{fig:image_categorical_features_vs_obesity_level}. This view provide a clear summary of the distribution, 
@@ -391,18 +398,452 @@ Age, CH20: water consumption, and Height.
 
 \subsection{Data preprocessing}
 
-Hi
+The data is splitted in two different datasets, the training and test datasets. The training dataset contains the 16 input features stated before 
+while the test data set only contains the output fetaure NObeyesdad=Obesity level. The datasets are created from the main dataset with 2111 records 
+and it is splitted such 80\% of the records (1688) are in the train set and the 20\% remaining (423) are in the test set. From this train set the 
+75\% of the records is kept as training set (1583) and the 25\% of the records (528) is used as validation data.
+
+\vspace{1em}The following categorical features has been adjusted for integer values, this is suitable because the categorical features in the dataset have an 
+inherent order (low, medium, high etc.) or the features are binary which can be converted from the 2 binary values to 0 and 1, which is a 
+straightforward and effective change.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|}
+        \hline
+        \textbf{Feature} & \textbf{Type} \\ \hline
+        Gender &  Categorical \\ \hline
+        family\_history\_with\_overweight & Categorical \\ \hline
+        FAVC &  Categorical \\ \hline
+        CAEC &  Categorical \\ \hline
+        SMOKE &  Categorical \\ \hline
+        SCC &  Categorical \\ \hline
+        CALC &  Categorical \\ \hline
+        MTRANS &  Categorical \\ \hline
+    \end{tabular}
+    \caption{Categorical features preprocessed}
+    \label{tab:table_categorical_preprocessing}
+\end{table}
+
+The following numerical values has been normalized. This is important to improve convergence speed and accuracy, preventing feature dominance and 
+improving interpretability.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|}
+        \hline
+        \textbf{Feature} & \textbf{Type} \\ \hline
+        Age &  Numerical \\ \hline
+        Height &  Numerical \\ \hline
+        Weight &  Numerical \\ \hline
+        FCVC &  Numerical \\ \hline
+        NCP &  Numerical \\ \hline
+        CH2O &  Numerical \\ \hline
+        FAF &  Numerical \\ \hline
+        TUE &  Numerical \\ \hline
+        NObeyesdad &  Numerical \\ \hline
+    \end{tabular}
+    \caption{Numerical features preprocessed}
+    \label{tab:table_numerical_preprocessing}
+\end{table}
+
+\section{Implementation of BP}
+
+The BP Python module includes activation functions and the NeuralNet class for implementing neural networks with backpropagation. The module provides 
+several activation functions: Sigmoid, ReLU, Leaky ReLU, Tanh, and Linear.  It has attributes like network structure, epochs, learning rate, and momentum. 
+The activation function can be selected using the fact parameter.
+
+\vspace{1em} Note: this implementation can be found in the file BP.py in the GitHub repository 
+(\href{https://github.com/novella93/NEC_A1/blob/main/BP.py}{Link to BP.py in Javier Novella NEC A1 repository})
+
+\subsection{NeuralNet class}
+
+\subsubsection{Attributes}
+
+The list of attributes and their descriptions are the following ones:
+
+\begin{itemize}
+    \item \textbf{Network Structure}: The layers attribute specifies the number of neurons in each layer.
+    \item \textbf{Epochs}: The epochs attribute defines the number of training iterations.
+    \item \textbf{Learning Rate}: The learning\_rate attribute controls the step size during gradient descent.
+    \item \textbf{Momentum}: The momentum attribute helps accelerate gradients vectors in the right directions.
+    \item \textbf{Activation Function}: The fact attribute allows selecting the activation function to be used in the network.
+\end{itemize}
+
+\subsubsection{Private methods}
+
+The \textbf{\_select\_activation\_function()} method dynamically selects the appropriate activation function based on the fact parameter. It supports functions like 
+sigmoid, relu, leaky relu, tanh, and linear.
+
+\vspace{1em}The \textbf{\_select\_derivative\_activation\_function()} method selects the derivative of the activation function, which is for backpropagation. 
+It matches the activation function chosen by \_select\_activation\_function().
+
+\vspace{1em}The \textbf{\_forward\_propagation()} method passes input data through the network layer by layer. It applies weights, thresholds, and activation functions 
+to compute the output of each layer.
+
+\vspace{1em}The \textbf{\_backward\_propagation()} method calculates the output error and propagates it backward through the network. It updates weights and thresholds 
+using gradient descent with momentum to minimize the error.
+
+\vspace{1em}The \textbf{\_train()} method normalizes input data and trains the network using mini-batch gradient descent. It periodically computes the training and 
+validation loss to monitor the network's performance.
+
+\subsubsection{Public methods}
+
+The \textbf{fit()} method normalizes input data and trains the network. It calls the \_train() method to perform the training process.
+
+\vspace{1em}The \textbf{predict()} method normalizes input data and performs a forward pass through the network to generate predictions on new data.
+
+\vspace{1em}The \textbf{loss\_epochs()} method returns the training and validation loss for each epoch.
+
+\subsection{Activation functions}
+
+\subsubsection{Sigmoid}
+
+The sigmoid activation function is defined as:
+
+$$ \sigma(x) = \frac{1}{1 + e^{-x}} $$
+
+Its derivative is:
+
+$$ \sigma'(x) = \sigma(x) \cdot (1 - \sigma(x)) $$
+
+\subsubsection{ReLU}
+
+On the one hand, the ReLU (Rectified Linear Unit) activation function is defined as:
+
+$$ \text{ReLU}(x) = \max(0, x) $$
+
+Its derivative is:
+
+$$
+\text{ReLU}'(x) = \begin{cases} 
+1 & \text{if } x > 0 \\ 
+0 & \text{if } x \leq 0 
+\end{cases}
+$$
+
+On the other, the Leaky ReLU activation function is defined as:
+
+$$
+\text{Leaky ReLU}(x) = \begin{cases} 
+x & \text{if } x > 0 \\ 
+\alpha x & \text{if } x \leq 0 
+\end{cases}
+$$
+
+Its derivative is:
+
+$$
+\text{Leaky ReLU}'(x) = \begin{cases} 
+1 & \text{if } x > 0 \\ 
+\alpha & \text{if } x \leq 0 
+\end{cases}
+$$
+
+\subsubsection{Linear}
+
+The linear activation function is defined as:
+
+$$ f(x) = x $$
+
+Its derivative is:
+
+$$ f'(x) = 1 $$
+
+\subsubsection{Tanh}
+
+The tanh (hyperbolic tangent) activation function is defined as:
+
+$$ \tanh(x) = \frac{e^x - e^{-x}}{e^x + e^{-x}} $$
+
+Its derivative is:
+
+$$ \tanh'(x) = 1 - \tanh^2(x) $$
+
+\newpage
+
+\section{Testing the implemented BP model}
+
+\subsection{Results}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|c|c|}
+        \hline
+        \textbf{Test nº} & \textbf{Nº layers} & \textbf{Structure}  & \textbf{Nº epochs} & \textbf{Learning} & \textbf{Momentum} & \textbf{Activation} \\ \hline
+        1       & 3                & [16, 4, 1]       & 10000      & 0.001         & 0.001    & tanh                \\ \hline
+        2       & 4                & [16, 8, 4, 1]    & 10000      & 0.001         & 0.001    & relu                \\ \hline
+        3       & 5                & [16, 8, 4, 2, 1] & 10000      & 0.01          & 0.01     & linear              \\ \hline
+        4       & 3                & [16, 4, 1]       & 1000       & 0.001         & 0.001    & tanh                \\ \hline
+        5       & 3                & [16, 4, 1]       & 1000       & 0.001         & 0.001    & linear              \\ \hline
+    \end{tabular}
+    \caption{Parameters used for the tests done to the BP implementation}
+    \label{tab:table_bp_parameters}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        \textbf{Test nº} & \textbf{MAPE}         & \textbf{MAE}         & \textbf{MSE}         \\ \hline
+        1       & 3.745677e+11 & 5.346505e-2 & 3.229095e-3 \\ \hline
+        2       & 6.461173e+11 & 4.253340e-2 & 2.032964e-3 \\ \hline
+        3       & 2.684181e+11 & 7.270744e-2 & 5.894476e-3 \\ \hline
+        4       & 5.895478e+11 & 6.132290e-2 & 4.673645e-3 \\ \hline
+        5       & 3.589370e+11 & 4.678564e-2 & 2.941892e-3 \\ \hline
+    \end{tabular}
+    \caption{Results of the tests done to the BP implementation}
+    \label{tab:table_bp_results}
+\end{table}
+
+\subsection{Analysis of the parameters used}
+
+\subsubsection{Learning rate and momentum}
+
+Tests showed that higher learning rates and momentum significantly worsened results. The table below shows one test where errors increased tenfold 
+with higher parameters. Therefore, it's best to keep the learning rate and momentum low.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|c|}
+        \hline
+        \textbf{Nº layers} & \textbf{Structure}  & \textbf{Nº epochs} & \textbf{Learning} & \textbf{Momentum} & \textbf{Activation} \\ \hline
+        3         & [16, 4, 1] & 10000     & 0.1     & 0.1     & tanh       \\ \hline
+
+    \end{tabular}
+    \caption{Parameters used for the test with higher learning rate and momentum}
+    \label{tab:table_bp_parameters_higher}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+        \hline
+        \textbf{MAPE}         & \textbf{MAE}         & \textbf{MSE}         \\ \hline
+        4.926861e+11 & 1.344565e-1 & 2.941442e-2 \\ \hline
+    \end{tabular}
+    \caption{Results of the test with higher learning rate and momentum}
+    \label{tab:table_bp_results_higher}
+\end{table}
+
+\subsubsection{Activation function}
+
+From the activation function perspective, linear and tanh tend to yield better results. Under the same conditions, linear shows lower 
+MAPE and MAE, while tanh has a lower MSE.
+
+\subsection{Loss}
+
+With 3 layers, a learning rate of 0.001, and the tanh activation function, Test 1 achieved the lowest MAE and MSE, indicating good performance. 
+Comparing it with Test 4, which uses the same parameters but fewer epochs, shows better performance in Test 1. This suggests that a higher number of 
+epochs tends to reduce the error. The training and validation loss plots show that after some epochs, the values stabilize, and the reduction per epoch decreases, 
+but overall, the loss continues to decrease.
+
+\vspace{1em}From Tests 1, 2, and 3, the training and validation errors are plotted to show their evolution over the epochs.
+
+\subsubsection{Test 1}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=440pt]{images/test1_error.png}
+    \caption{Training error vs validation error in test index 1}
+    \label{fig:image_error_test_1}
+\end{figure}
+
+\subsubsection{Test 2}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=440pt]{images/test2_error.png}
+    \caption{Training error vs validation error in test index 2}
+    \label{fig:image_error_test_2}
+\end{figure}
+
+\subsubsection{Test 3}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=400pt]{images/test3_error.png}
+    \caption{Training error vs validation error in test index 3}
+    \label{fig:image_error_test_3}
+\end{figure}
+
+\newpage
+
+\section{Comparison with other models BP vs BP-F vs MLR-F}
+
+When evaluating model performance, scatter plots are a useful tool. In these plots, better performance is indicated by points closer to the diagonal. 
+This means the predicted values are closer to the real ones. Three new tests have been performed to compare the three models.
+
+\vspace{1em}From the model's perspective, shows some clear trends. In Test 1, the BP-F model outperformed both BP and MLR-R models, achieving the lowest MAPE, MAE, and MSE. 
+This indicates that BP-F is more accurate and reliable under these conditions.
+
+\vspace{1em}In Test 2, BP-F again showed better performance than BP and MLR-R, with lower MAE and MSE values. However, the difference between BP and BP-F was less pronounced 
+compared to Test 1. This suggests that while BP-F generally performs better, the advantage may vary depending on the specific test conditions.
+
+\vspace{1em}Test 3 presented a different scenario where BP achieved the lowest errors, while BP-F and MLR-R had significantly higher MAPE, MAE, and MSE values. 
+This indicates that BP can sometimes outperform BP-F and MLR-R, especially when the number of epochs is lower. 
+
+\vspace{1em} In conclusion and overall, BP and BP-F models tend to perform better than MLR-R, but the choice between BP and BP-F may depend on the specific parameters 
+and conditions of the test.
+
+\subsection{Test 1}
+
+The parameters used for the 3 models are the following ones:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|c|c|}
+        \hline
+        \textbf{Model} & \textbf{Nº layers} & \textbf{Structure}  & \textbf{Nº epochs} & \textbf{Learning} & \textbf{Momentum} & \textbf{Activation} \\ \hline
+        BP       & 3                & [16, 4, 1]    & 10000      & 0.001         & 0.001    & relu                \\ \hline
+        BP-F     & 3                & [16, 4, 1]    & 10000      & 0.001         & 0.001    & relu                \\ \hline
+        MLR-F    & 3                & [16, 4, 1]    & 10000      & 0.001         & 0.001    & relu              \\ \hline
+    \end{tabular}
+    \caption{Test 1 - Comparison between models parameters}
+    \label{tab:table_parameters_comparison_1}
+\end{table}
+
+And the quality results are the following ones
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        \textbf{Model} & \textbf{MAPE}         & \textbf{MAE}         & \textbf{MSE}         \\ \hline
+        BP & 8.174308e+11 & 8.011910e-2 & 6.945218e-3 \\ \hline
+        BP-F & 5.832255e+11 & 5.275115e-2 & 3.506288e-3 \\ \hline
+        MLR-F & 1.812658e+12 & 8.446904e-2 & 1.219164e-2 \\ \hline
+    \end{tabular}
+    \caption{Test 1 -Comparison between models results}
+    \label{tab:table_results_comparison_1}
+\end{table}
+
+\subsubsection{Scatter plot}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=400pt]{images/test1_scatter.png}
+    \caption{Test 1 - scatter plot of the 3 models}
+    \label{fig:image_scatter_comparison_1}
+\end{figure}
+
+\subsection{Test 2}
+
+The parameters used for the 3 models are the following ones:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|c|c|}
+        \hline
+        \textbf{Model} & \textbf{Nº layers} & \textbf{Structure}  & \textbf{Nº epochs} & \textbf{Learning} & \textbf{Momentum} & \textbf{Activation} \\ \hline
+        BP       & 3                & [16, 4, 1]    & 1000      & 0.001         & 0.001    & relu                \\ \hline
+        BP-F     & 3                & [16, 4, 1]    & 1000      & 0.001         & 0.001    & relu                \\ \hline
+        MLR-F    & 3                & [16, 4, 1]    & 1000      & 0.001         & 0.001    & relu              \\ \hline
+    \end{tabular}
+    \caption{Test 2 - Comparison between models parameters}
+    \label{tab:table_parameters_comparison_2}
+\end{table}
+
+And the quality results are the following ones
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        \textbf{Model} & \textbf{MAPE}         & \textbf{MAE}         & \textbf{MSE}         \\ \hline
+        BP & 6.239873e+11 & 7.014470e-2 & 5.567292e-3 \\ \hline
+        BP-F & 6.572347e+11 & 5.234516e-2 & 3.462514e-3 \\ \hline
+        MLR-F & 1.568601e+12 & 6.542944e-2 & 7.089106e-3 \\ \hline
+    \end{tabular}
+    \caption{Test 2 -Comparison between models results}
+    \label{tab:table_results_comparison_2}
+\end{table}
+
+\subsubsection{Scatter plot}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=400pt]{images/test2_scatter.png}
+    \caption{Test 2 - scatter plot of the 3 models}
+    \label{fig:image_scatter_comparison_2}
+\end{figure}
+
+\subsection{Test 3}
+
+The parameters used for the 3 models are the following ones:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|c|c|}
+        \hline
+        \textbf{Model} & \textbf{Nº layers} & \textbf{Structure}  & \textbf{Nº epochs} & \textbf{Learning} & \textbf{Momentum} & \textbf{Activation} \\ \hline
+        BP       & 3                & [16, 4, 1]    & 1000      & 0.001         & 0.001    & relu                \\ \hline
+        BP-F     & 3                & [16, 4, 1]    & 1000      & 0.001         & 0.001    & relu                \\ \hline
+        MLR-F    & 3                & [16, 4, 1]    & 1000      & 0.001         & 0.001    & relu              \\ \hline
+    \end{tabular}
+    \caption{Test 3 - Comparison between models parameters}
+    \label{tab:table_parameters_comparison_3}
+\end{table}
+
+And the quality results are the following ones
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        \textbf{Model} & \textbf{MAPE}         & \textbf{MAE}         & \textbf{MSE}         \\ \hline
+        BP & 2.764482e+11 & 4.838344e-2 & 3.096494e-3 \\ \hline
+        BP-F & 4.212754e+12 & 1.542775e-1 & 3.621248e-2 \\ \hline
+        MLR-F & 3.964180e+12 & 1.188944e-1 & 2.303858e-2 \\ \hline
+    \end{tabular}
+    \caption{Test 3 -Comparison between models results}
+    \label{tab:table_results_comparison_3}
+\end{table}
+
+\subsubsection{Scatter plot}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=400pt]{images/test3_scatter.png}
+    \caption{Test 3 - scatter plot of the 3 models}
+    \label{fig:image_scatter_comparison_3}
+\end{figure}
 
 % Please add the following required packages to your document preamble:
 % \usepackage[table,xcdraw]{xcolor}
 % Beamer presentation requires \usepackage{colortbl} instead of \usepackage[table,xcdraw]{xcolor}
 
-% \begin{thebibliography}{11}
+\newpage
 
-% \bibitem{Sun2023}
-% Qiyang Sun, The probability principle of the birthday paradox and extended applications, 2023, Hampton Roads Academy. 
-% \url{https://francis-press.com/papers/4146}.
-    
+\begin{thebibliography}{11}
+
+\bibitem{Gomez}
+Sergio Gómez, "Supervised Learning Using Back-Propagation," Neural and Evolutionary Computation. 
+
+\bibitem{HKP2}
+Hertz, Krogh \& Palmer, Introduction to the Theory of Neural Computation, Chapter ONE: Introduction.
+
+\bibitem{HKP}
+Hertz, Krogh \& Palmer, Introduction to the Theory of Neural Computation, Chapter FIVE: Simple Perceptrons (only 5.1, 5.2, 5.4 except Convergence of Gradient Descent, 5.5), Chapter SIX: Multi-Layer Networks (all except 6.5).
+
+\bibitem{DS}
+Du \& Swamy, Neural Networks and Statistical Learning, Chapter 1: Introduction (all except 1.2.2 and 1.4).
+
+\bibitem{LinearRegression}
+Linear regression and Ordinary least squares, Wikipedia. \url{https://en.wikipedia.org/wiki/Linear_regression}
+
+\bibitem{LogisticRegression}
+Logistic regression, Wikipedia. \url{https://en.wikipedia.org/wiki/Logistic_regression}
+
+\bibitem{NaiveBayes}
+Naive Bayes classifier, Wikipedia. \url{https://en.wikipedia.org/wiki/Naive_Bayes_classifier}
+
+\bibitem{KNN}
+K-Nearest Neighbors, Wikipedia. \url{https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm}
+
+\bibitem{Kotsiantis2006}
+S. B. Kotsiantis, D. Kanellopoulos, and P. E. Pintelas, "Data Preprocessing for Supervised Learning," International Journal of Computer Science, vol. 1, no. 2, 2006, ISSN 1306-4428.
+
 % \bibitem{IEEENTRU}
 % IEEEP1363, Standard Specifications For Public-Key Cryptography. 
 % \url{http://grouper.ieee.org/groups/1363/}.
@@ -426,6 +867,6 @@ Hi
 % Takeshi Koshiba, "Security Notions for Quantum Public-Key Cryptography" 2007.
 % \url{https://arxiv.org/abs/quant-ph/0702183}
 
-% \end{thebibliography}
+\end{thebibliography}
 
 \end{document}
